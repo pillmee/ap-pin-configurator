@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AP Pin Configurator - 편집</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 24px;
+        }
+
+        .ap-name {
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        select {
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            min-width: 200px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            max-height: 600px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            position: sticky;
+            top: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            z-index: 10;
+        }
+
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .pin-select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .message.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        /* 모달 스타일 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal.show {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .modal-body {
+            margin-bottom: 20px;
+        }
+
+        .modal-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .back-link {
+            display: inline-block;
+            color: #667eea;
+            text-decoration: none;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link">← 메인으로 돌아가기</a>
+
+        <div class="header">
+            <h1>핀 설정 편집 - <span class="ap-name" id="apNameDisplay"></span></h1>
+        </div>
+
+        <!-- 툴바 -->
+        <div class="toolbar">
+            <div class="toolbar-group">
+                <label for="projectSelect">프로젝트:</label>
+                <select id="projectSelect">
+                    <option value="">프로젝트 선택</option>
+                </select>
+            </div>
+            <div class="toolbar-group">
+                <button class="btn-primary" id="loadBtn">Load</button>
+                <button class="btn-success" id="saveBtn">Save</button>
+            </div>
+        </div>
+
+        <!-- 메시지 -->
+        <div class="message" id="message"></div>
+
+        <!-- 핀 테이블 -->
+        <div class="table-container">
+            <table id="pinTable">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">#</th>
+                        <th style="width: 150px;">Ball Location</th>
+                        <th>Signal Name</th>
+                    </tr>
+                </thead>
+                <tbody id="pinTableBody">
+                    <tr>
+                        <td colspan="3" class="loading">
+                            <div class="spinner"></div>
+                            핀 데이터를 불러오는 중...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 저장 모달 -->
+    <div class="modal" id="saveModal">
+        <div class="modal-content">
+            <div class="modal-header">프로젝트 저장</div>
+            <div class="modal-body">
+                <label>
+                    <input type="radio" name="saveMode" value="new" checked>
+                    새 프로젝트로 저장
+                </label>
+                <input type="text" class="modal-input" id="newProjectName" placeholder="프로젝트 이름 입력">
+                
+                <div style="margin-top: 15px;">
+                    <label>
+                        <input type="radio" name="saveMode" value="update">
+                        기존 프로젝트 업데이트
+                    </label>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-secondary" id="cancelSaveBtn">취소</button>
+                <button class="btn-success" id="confirmSaveBtn">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 중복 경고 모달 -->
+    <div class="modal" id="duplicateModal">
+        <div class="modal-content">
+            <div class="modal-header">⚠️ 중복 경고</div>
+            <div class="modal-body" id="duplicateMessage"></div>
+            <div class="modal-buttons">
+                <button class="btn-primary" id="closeDuplicateBtn">확인</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const apName = urlParams.get('ap_name');
+        let ballMap = {};
+        let signalMap = {};
+        let currentConfig = {};
+        let previousSelections = {};
+
+        // 페이지 로드 시 실행
+        document.getElementById('apNameDisplay').textContent = apName;
+
+        async function loadPinData() {
+            try {
+                const response = await fetch(`/api/pin-list/${encodeURIComponent(apName)}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    ballMap = data.ball_map;
+                    signalMap = data.signal_map;
+                    renderPinTable();
+                    await loadProjectList();
+                } else {
+                    showMessage('핀 데이터를 불러오는데 실패했습니다.', 'error');
+                }
+            } catch (error) {
+                showMessage('서버 연결에 실패했습니다.', 'error');
+            }
+        }
+
+        function renderPinTable() {
+            const tbody = document.getElementById('pinTableBody');
+            tbody.innerHTML = '';
+
+            let rowIndex = 1;
+            for (const [ballLocation, ballData] of Object.entries(ballMap)) {
+                const row = document.createElement('tr');
+                
+                // 인덱스 셀
+                const indexCell = document.createElement('td');
+                indexCell.textContent = rowIndex++;
+                indexCell.style.textAlign = 'center';
+                indexCell.style.fontWeight = '600';
+                indexCell.style.color = '#999';
+                row.appendChild(indexCell);
+                
+                // Ball Location 셀
+                const ballCell = document.createElement('td');
+                ballCell.textContent = ballLocation;
+                ballCell.style.fontWeight = '600';
+                row.appendChild(ballCell);
+
+                // Signal Name 셀 (콤보박스)
+                const signalCell = document.createElement('td');
+                const select = document.createElement('select');
+                select.className = 'pin-select';
+                select.dataset.ballLocation = ballLocation;
+
+                ballData.signals.forEach((signalName, index) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = `[${index}] ${signalName}`;
+                    option.dataset.signalName = signalName;
+                    
+                    // Default 선택
+                    if (index === ballData.default_index) {
+                        option.selected = true;
+                        currentConfig[ballLocation] = signalName;
+                        previousSelections[ballLocation] = index;
+                    }
+                    
+                    select.appendChild(option);
+                });
+
+                // 변경 이벤트 리스너
+                select.addEventListener('change', async function(e) {
+                    await handleSignalChange(e.target);
+                });
+
+                signalCell.appendChild(select);
+                row.appendChild(signalCell);
+                
+                tbody.appendChild(row);
+            }
+        }
+
+        async function handleSignalChange(selectElement) {
+            const ballLocation = selectElement.dataset.ballLocation;
+            const selectedIndex = parseInt(selectElement.value);
+            const selectedOption = selectElement.options[selectElement.selectedIndex];
+            const signalName = selectedOption.dataset.signalName;
+
+            // 현재 선택 상태 수집
+            const currentSelections = {};
+            document.querySelectorAll('.pin-select').forEach(sel => {
+                const bl = sel.dataset.ballLocation;
+                const opt = sel.options[sel.selectedIndex];
+                currentSelections[bl] = opt.dataset.signalName;
+            });
+
+            // 중복 체크
+            const response = await fetch('/api/check-signal-duplicate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ap_name: apName,
+                    signal_name: signalName,
+                    current_ball_location: ballLocation,
+                    current_selections: currentSelections
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.duplicate) {
+                // 중복 발견 - 경고 표시 및 되돌리기
+                document.getElementById('duplicateMessage').textContent = 
+                    `Signal "${signalName}"은(는) 이미 Ball Location "${result.ball_location}"에서 사용 중입니다.`;
+                document.getElementById('duplicateModal').classList.add('show');
+                
+                // 이전 선택으로 되돌리기
+                selectElement.value = previousSelections[ballLocation];
+            } else {
+                // 중복 없음 - 설정 업데이트
+                currentConfig[ballLocation] = signalName;
+                previousSelections[ballLocation] = selectedIndex;
+            }
+        }
+
+        async function loadProjectList() {
+            try {
+                const response = await fetch(`/api/projects/${encodeURIComponent(apName)}`);
+                const data = await response.json();
+                
+                const select = document.getElementById('projectSelect');
+                select.innerHTML = '<option value="">프로젝트 선택</option>';
+                
+                data.projects.forEach(project => {
+                    const option = document.createElement('option');
+                    option.value = project.name;
+                    option.textContent = project.name;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('프로젝트 목록 로드 실패:', error);
+            }
+        }
+
+        // Load 버튼
+        document.getElementById('loadBtn').addEventListener('click', async function() {
+            const projectName = document.getElementById('projectSelect').value;
+            
+            if (!projectName) {
+                showMessage('프로젝트를 선택해주세요.', 'warning');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/project/${encodeURIComponent(apName)}/${encodeURIComponent(projectName)}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const loadedConfig = data.config;
+                    
+                    // 테이블의 콤보박스 업데이트
+                    document.querySelectorAll('.pin-select').forEach(select => {
+                        const ballLocation = select.dataset.ballLocation;
+                        if (loadedConfig[ballLocation] !== undefined) {
+                            const signalName = loadedConfig[ballLocation];
+                            
+                            // signal name으로 인덱스 찾기
+                            const ballData = ballMap[ballLocation];
+                            const signalIndex = ballData.signals.indexOf(signalName);
+                            
+                            if (signalIndex !== -1) {
+                                select.value = signalIndex;
+                                currentConfig[ballLocation] = signalName;
+                                previousSelections[ballLocation] = signalIndex;
+                            }
+                        }
+                    });
+                    
+                    showMessage(`프로젝트 "${projectName}"을(를) 불러왔습니다.`, 'success');
+                } else {
+                    showMessage('프로젝트를 불러오는데 실패했습니다.', 'error');
+                }
+            } catch (error) {
+                showMessage('서버 연결에 실패했습니다.', 'error');
+            }
+        });
+
+        // Save 버튼
+        document.getElementById('saveBtn').addEventListener('click', function() {
+            document.getElementById('saveModal').classList.add('show');
+            document.getElementById('newProjectName').value = '';
+            document.querySelector('input[name="saveMode"][value="new"]').checked = true;
+        });
+
+        // 저장 모달 - 취소
+        document.getElementById('cancelSaveBtn').addEventListener('click', function() {
+            document.getElementById('saveModal').classList.remove('show');
+        });
+
+        // 저장 모달 - 확인
+        document.getElementById('confirmSaveBtn').addEventListener('click', async function() {
+            const saveMode = document.querySelector('input[name="saveMode"]:checked').value;
+            let projectName;
+            let overwrite = false;
+
+            if (saveMode === 'new') {
+                projectName = document.getElementById('newProjectName').value.trim();
+                if (!projectName) {
+                    showMessage('프로젝트 이름을 입력해주세요.', 'warning');
+                    return;
+                }
+            } else {
+                projectName = document.getElementById('projectSelect').value;
+                if (!projectName) {
+                    showMessage('업데이트할 프로젝트를 선택해주세요.', 'warning');
+                    return;
+                }
+                overwrite = true;
+            }
+
+            try {
+                const response = await fetch(`/api/project/${encodeURIComponent(apName)}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        project_name: projectName,
+                        config: currentConfig,
+                        overwrite: overwrite
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage(`프로젝트 "${projectName}"을(를) 저장했습니다.`, 'success');
+                    document.getElementById('saveModal').classList.remove('show');
+                    await loadProjectList();
+                } else {
+                    showMessage(data.detail || '저장에 실패했습니다.', 'error');
+                }
+            } catch (error) {
+                showMessage('서버 연결에 실패했습니다.', 'error');
+            }
+        });
+
+        // 중복 경고 모달 닫기
+        document.getElementById('closeDuplicateBtn').addEventListener('click', function() {
+            document.getElementById('duplicateModal').classList.remove('show');
+        });
+
+        // 유틸리티 함수
+        function showMessage(text, type) {
+            const message = document.getElementById('message');
+            message.textContent = text;
+            message.className = `message ${type} show`;
+            
+            setTimeout(() => {
+                message.classList.remove('show');
+            }, 5000);
+        }
+
+        // 초기 로드
+        loadPinData();
+    </script>
+</body>
+</html>
