@@ -7,13 +7,13 @@ from typing import Dict
 from pathlib import Path
 
 
-def save_project(file_path: str, config: Dict[str, str]) -> None:
+def save_project(file_path: str, config: Dict[str, int]) -> None:
     """
     프로젝트 설정을 JSON 파일로 저장
     
     Args:
         file_path: 저장할 파일 경로 (Project_XXXXX.json)
-        config: 설정 딕셔너리 {ball_location: signal_name}
+        config: 설정 딕셔너리 {ball_location: function_index}
     """
     # 파일 디렉토리가 없으면 생성
     Path(file_path).parent.mkdir(parents=True, exist_ok=True)
@@ -22,7 +22,7 @@ def save_project(file_path: str, config: Dict[str, str]) -> None:
         json.dump(config, f, ensure_ascii=False, indent=2)
 
 
-def load_project(file_path: str) -> Dict[str, str]:
+def load_project(file_path: str) -> Dict[str, int]:
     """
     JSON 파일에서 프로젝트 설정 로드
     
@@ -30,7 +30,7 @@ def load_project(file_path: str) -> Dict[str, str]:
         file_path: 로드할 파일 경로
         
     Returns:
-        설정 딕셔너리 {ball_location: signal_name}
+        설정 딕셔너리 {ball_location: function_index}
     """
     with open(file_path, 'r', encoding='utf-8') as f:
         config = json.load(f)
@@ -96,10 +96,10 @@ if __name__ == "__main__":
     
     # 임시 설정 생성 및 저장
     test_config = {
-        "A1": "GPIO_0",
-        "A2": "I2C_SDA",
-        "B1": "SPI_MOSI",
-        "B2": "UART_TX"
+        "A1": 0,
+        "A2": 1,
+        "B1": 2,
+        "B2": 0
     }
     
     # 임시 파일로 저장

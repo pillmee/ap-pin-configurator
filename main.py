@@ -146,7 +146,7 @@ async def get_project_list(ap_name: str):
 
 @app.get("/api/project/{ap_name}/{project_name}")
 async def load_project_config(ap_name: str, project_name: str):
-    """프로젝트 설정 로드 (ball_location: signal_name 형태)"""
+    """프로젝트 설정 로드 (ball_location: function_index 형태)"""
     filename = f"Project_{project_name}.json"
     file_path = PROJECT_DIR / ap_name / filename
     
@@ -166,7 +166,7 @@ async def save_project_config(ap_name: str, data: Dict):
     프로젝트 설정 저장
     data: {
         "project_name": str,
-        "config": dict  # {ball_location: signal_name}
+        "config": dict  # {ball_location: function_index}
         "overwrite": bool
     }
     """
@@ -203,6 +203,11 @@ async def check_signal_duplicate(data: Dict):
     """
     Signal Name 중복 체크
     현재 테이블의 선택 상태와 signal_map을 비교하여 중복 확인
+    
+    지침: "콤보박스에서 사용자가 Signal Name을 변경하면 선택한 Signal Name이 
+    다른 Ball Location에서 사용중인지 signal 맵과 현재 테이블의 선택을 비교 확인하여 
+    사용중이라면 팝업을 띄우고 사용자의 선택을 되돌린다."
+    
     data: {
         "ap_name": str,
         "signal_name": str,
@@ -215,14 +220,15 @@ async def check_signal_duplicate(data: Dict):
     current_ball_location = data.get("current_ball_location")
     current_selections = data.get("current_selections", {})
     
-    # 현재 선택 상태에서 다른 Ball Location이 같은 Signal을 사용하는지 확인
+    # 1) 현재 테이블의 다른 Ball Location에서 동일한 Signal을 선택했는지 확인
     for ball_loc, selected_signal in current_selections.items():
         if ball_loc != current_ball_location and selected_signal == signal_name:
             return {
-                "duplicate": True,
-                "ball_location": ball_loc
+                "duplicate": True, 
+                "ball_location": ball_loc,
+                "message": f"Signal '{signal_name}'은(는) 이미 Ball Location '{ball_loc}'에서 사용 중입니다."
             }
-    
+
     return {"duplicate": False}
 
 
