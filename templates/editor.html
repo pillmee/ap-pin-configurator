@@ -410,34 +410,50 @@
                 ballCell.style.fontWeight = '600';
                 row.appendChild(ballCell);
 
-                // Signal Name 셀 (콤보박스)
+                // Signal Name 셀 (콤보박스 또는 텍스트)
                 const signalCell = document.createElement('td');
-                const select = document.createElement('select');
-                select.className = 'pin-select';
-                select.dataset.ballLocation = ballLocation;
+                
+                // 지침: "Ball Location"이 가진 "Signal Name" 배열의 길이가 1이면 콤보박스 대신 텍스트로만 나타낸다
+                if (ballData.signals.length === 1) {
+                    // 텍스트로만 표시
+                    const signalName = ballData.signals[0];
+                    signalCell.textContent = `[0] ${signalName}`;
+                    signalCell.style.color = '#666';
+                    signalCell.dataset.ballLocation = ballLocation;
+                    signalCell.dataset.fixedSignal = 'true';
+                    // 길이가 1인 경우 config에 저장하지 않음 (나중에 필터링)
+                } else {
+                    // 콤보박스로 표시
+                    const select = document.createElement('select');
+                    select.className = 'pin-select';
+                    select.dataset.ballLocation = ballLocation;
 
-                ballData.signals.forEach((signalName, index) => {
-                    const option = document.createElement('option');
-                    option.value = index;
-                    option.textContent = `[${index}] ${signalName}`;
-                    option.dataset.signalName = signalName;
-                    
-                    // Default 선택
-                    if (index === ballData.default_index) {
-                        option.selected = true;
-                        currentConfig[ballLocation] = signalName;
-                        previousSelections[ballLocation] = index;
-                    }
-                    
-                    select.appendChild(option);
-                });
+                    // signals는 Function Index 순서대로 정렬된 배열
+                    // 배열의 인덱스가 곧 Function Index
+                    ballData.signals.forEach((signalName, functionIndex) => {
+                        const option = document.createElement('option');
+                        option.value = functionIndex;  // Function Index를 value로 사용
+                        option.textContent = `[${functionIndex}] ${signalName}`;
+                        option.dataset.signalName = signalName;
+                        
+                        // Default Function Index와 비교하여 선택
+                        if (functionIndex === ballData.default_function) {
+                            option.selected = true;
+                            currentConfig[ballLocation] = functionIndex;
+                            previousSelections[ballLocation] = functionIndex;
+                        }
+                        
+                        select.appendChild(option);
+                    });
 
-                // 변경 이벤트 리스너
-                select.addEventListener('change', async function(e) {
-                    await handleSignalChange(e.target);
-                });
+                    // 변경 이벤트 리스너
+                    select.addEventListener('change', async function(e) {
+                        await handleSignalChange(e.target);
+                    });
 
-                signalCell.appendChild(select);
+                    signalCell.appendChild(select);
+                }
+                
                 row.appendChild(signalCell);
                 
                 tbody.appendChild(row);
@@ -446,7 +462,7 @@
 
         async function handleSignalChange(selectElement) {
             const ballLocation = selectElement.dataset.ballLocation;
-            const selectedIndex = parseInt(selectElement.value);
+            const selectedFunctionIndex = parseInt(selectElement.value);  // Function Index
             const selectedOption = selectElement.options[selectElement.selectedIndex];
             const signalName = selectedOption.dataset.signalName;
 
@@ -475,15 +491,15 @@
             if (result.duplicate) {
                 // 중복 발견 - 경고 표시 및 되돌리기
                 document.getElementById('duplicateMessage').textContent = 
-                    `Signal "${signalName}"은(는) 이미 Ball Location "${result.ball_location}"에서 사용 중입니다.`;
+                    result.message || `Signal "${signalName}"은(는) 이미 Ball Location "${result.ball_location}"에서 사용 중입니다.`;
                 document.getElementById('duplicateModal').classList.add('show');
                 
-                // 이전 선택으로 되돌리기
+                // 이전 선택으로 되돌리기 (Function Index로 되돌림)
                 selectElement.value = previousSelections[ballLocation];
             } else {
-                // 중복 없음 - 설정 업데이트
-                currentConfig[ballLocation] = signalName;
-                previousSelections[ballLocation] = selectedIndex;
+                // 중복 없음 - 설정 업데이트 (Function Index 저장)
+                currentConfig[ballLocation] = selectedFunctionIndex;
+                previousSelections[ballLocation] = selectedFunctionIndex;
             }
         }
 
@@ -520,23 +536,17 @@
                 const data = await response.json();
                 
                 if (response.ok) {
-                    const loadedConfig = data.config;
+                    const loadedConfig = data.config;  // {ball_location: function_index}
                     
                     // 테이블의 콤보박스 업데이트
                     document.querySelectorAll('.pin-select').forEach(select => {
                         const ballLocation = select.dataset.ballLocation;
                         if (loadedConfig[ballLocation] !== undefined) {
-                            const signalName = loadedConfig[ballLocation];
+                            const functionIndex = loadedConfig[ballLocation];
                             
-                            // signal name으로 인덱스 찾기
-                            const ballData = ballMap[ballLocation];
-                            const signalIndex = ballData.signals.indexOf(signalName);
-                            
-                            if (signalIndex !== -1) {
-                                select.value = signalIndex;
-                                currentConfig[ballLocation] = signalName;
-                                previousSelections[ballLocation] = signalIndex;
-                            }
+                            select.value = functionIndex;
+                            currentConfig[ballLocation] = functionIndex;
+                            previousSelections[ballLocation] = functionIndex;
                         }
                     });
                     
@@ -582,13 +592,21 @@
                 overwrite = true;
             }
 
+            // 지침: "Ball Location"이 가진 "Signal Name" 배열의 길이가 1인 "Ball Location"에 대해서는 저장하지 않는다
+            const filteredConfig = {};
+            for (const [ballLocation, functionIndex] of Object.entries(currentConfig)) {
+                if (ballMap[ballLocation] && ballMap[ballLocation].signals.length > 1) {
+                    filteredConfig[ballLocation] = functionIndex;
+                }
+            }
+
             try {
                 const response = await fetch(`/api/project/${encodeURIComponent(apName)}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         project_name: projectName,
-                        config: currentConfig,
+                        config: filteredConfig,  // 필터링된 config 사용
                         overwrite: overwrite
                     })
                 });
