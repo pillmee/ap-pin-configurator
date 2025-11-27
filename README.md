@@ -35,13 +35,12 @@ python main.py
 또는
 
 ```bash
-uvicorn main:app --reload
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 2. 웹 브라우저에서 다음 주소로 접속합니다:
-```
-http://localhost:8000
-```
+   - 로컬: `http://localhost:8000`
+   - 다른 호스트: `http://<서버IP>:8000` (예: `http://192.168.1.100:8000`)
 
 ## 📁 프로젝트 구조
 
